@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://a2a-protocol.org/schemas/agent-card.json",
+  "title": "Agent Card",
+  "description": "Agent discovery metadata returned from /.well-known/agent-card endpoint",
+  "type": "object",
+  "required": ["name", "version", "capabilities", "endpoints"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Agent identifier (e.g., 'agent-a', 'agent-b')",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "description": "Agent version (semantic versioning recommended)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "List of capabilities this agent supports",
+      "items": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "task-initiation",
+          "task-execution",
+          "llm-processing"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "endpoints": {
+      "type": "object",
+      "description": "Map of endpoint names to URLs",
+      "required": ["message/send"],
+      "properties": {
+        "message/send": {
+          "type": "string",
+          "format": "uri",
+          "description": "A2A message endpoint URL",
+          "pattern": "^https?://"
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "format": "uri"
+      }
+    }
+  },
+  "additionalProperties": false
+}

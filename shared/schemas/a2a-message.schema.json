@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://a2a-protocol.org/schemas/message.json",
+  "title": "A2A Message Envelope",
+  "description": "JSON-RPC 2.0 envelope for Agent-to-Agent communication",
+  "type": "object",
+  "required": ["jsonrpc", "method", "params", "id"],
+  "properties": {
+    "jsonrpc": {
+      "type": "string",
+      "const": "2.0",
+      "description": "JSON-RPC version"
+    },
+    "method": {
+      "type": "string",
+      "const": "message/send",
+      "description": "A2A method name"
+    },
+    "params": {
+      "type": "object",
+      "required": ["taskId", "messageId", "replyTo", "content"],
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "description": "Conversation thread identifier",
+          "minLength": 1
+        },
+        "messageId": {
+          "type": "string",
+          "description": "Unique message ID (stable for retries, used for deduplication)",
+          "minLength": 1
+        },
+        "replyTo": {
+          "type": "string",
+          "format": "uri",
+          "description": "Sender's A2A endpoint URL for replies",
+          "pattern": "^https?://"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message payload (text content)",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "id": {
+      "type": "string",
+      "description": "JSON-RPC request ID",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
