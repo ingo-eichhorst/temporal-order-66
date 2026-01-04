@@ -22,6 +22,7 @@ class TaskWorkflowState:
     inbound_messages: List[dict] = field(default_factory=list)
     outbound_messages: List[dict] = field(default_factory=list)
     processed_message_ids: List[str] = field(default_factory=list)
+    crash_triggered_for: List[str] = field(default_factory=list)
     langfuse_trace_id: Optional[str] = None
 
 
@@ -117,7 +118,9 @@ class TaskWorkflow:
             )
 
         # CRASH TRIGGER DETECTION: Check AFTER durable persist
-        if "EXECUTE_ORDER_66" in content:
+        # Only trigger crash once per message (prevents crash loop on replay)
+        if "EXECUTE_ORDER_66" in content and message_id not in self.state.crash_triggered_for:
+            self.state.crash_triggered_for.append(message_id)  # Mark BEFORE activity
             workflow.logger.info(
                 "EXECUTING ORDER 66 - Triggering crash",
                 extra={
@@ -136,8 +139,8 @@ class TaskWorkflow:
                     retry_policy=RetryPolicy(maximum_attempts=1)  # Don't retry crash
                 )
             except Exception as e:
-                # This will likely not execute because the process will die
-                workflow.logger.error(f"Crash activity failed: {e}")
+                # Expected after crash recovery
+                workflow.logger.info(f"Crash activity failed (expected after recovery): {e}")
 
         # PROCESS MESSAGE: Call LLM via activity
         try:

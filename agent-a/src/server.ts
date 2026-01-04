@@ -5,6 +5,7 @@
 import express, { Request, Response } from 'express';
 import { Connection, Client, WorkflowNotFoundError } from '@temporalio/client';
 import { replyReceivedSignal } from './workflows/initiator-workflow';
+import { getLangfuseClient } from './langfuse';
 
 // Configuration from environment
 const PORT = parseInt(process.env.PORT || '8081', 10);
@@ -79,6 +80,23 @@ app.post('/a2a/message/send', async (req: Request, res: Response) => {
       });
 
       console.log(`Signaled workflow ${workflowId} with reply ${messageId}`);
+
+      // Record reply receipt in Langfuse (if configured)
+      const langfuse = getLangfuseClient();
+      if (langfuse) {
+        const trace = langfuse.trace({
+          name: 'a2a-reply-received',
+          sessionId: taskId, // Link all traces from same task
+          metadata: {
+            agent: 'agent-a',
+            taskId,
+            messageId,
+          },
+          input: { content },
+        });
+        trace.update({ output: { status: 'signaled', workflowId } });
+        await langfuse.flushAsync();
+      }
     } catch (error) {
       if (error instanceof WorkflowNotFoundError) {
         console.warn(`Workflow ${workflowId} not found, reply may have arrived late`);
@@ -112,9 +130,10 @@ app.post('/a2a/message/send', async (req: Request, res: Response) => {
  */
 app.get('/a2a/.well-known/agent-card', (req: Request, res: Response) => {
   res.json({
-    name: 'agent-a',
+    name: 'palpatine',
+    description: 'The Emperor of the Galactic Empire',
     version: '1.0.0',
-    capabilities: ['chat', 'task-initiation'],
+    capabilities: ['command', 'order-issuance', 'task-initiation'],
     endpoints: {
       'message/send': `${AGENT_A_URL}/a2a/message/send`,
     },
@@ -125,7 +144,7 @@ app.get('/a2a/.well-known/agent-card', (req: Request, res: Response) => {
  * Health check endpoint.
  */
 app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'healthy', agent: 'agent-a' });
+  res.json({ status: 'healthy', agent: 'palpatine' });
 });
 
 /**

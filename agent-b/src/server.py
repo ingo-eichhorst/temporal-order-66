@@ -53,8 +53,8 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Agent B",
-    description="A2A-enabled agent with crash recovery capabilities",
+    title="Clone Commander CC-2224",
+    description="Clone Commander receiving orders from the Emperor. Demonstrates crash recovery.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -177,11 +177,12 @@ async def receive_message(request: Request):
 @app.get("/a2a/.well-known/agent-card")
 async def get_agent_card():
     """
-    Agent discovery endpoint - returns Agent B's metadata.
+    Agent discovery endpoint - returns Clone Commander's metadata.
 
     Returns:
     {
-        "name": "agent-b",
+        "name": "clone-commander",
+        "description": "Clone Commander CC-2224 of the 212th Attack Battalion",
         "version": "1.0.0",
         "capabilities": [...],
         "endpoints": {...}
@@ -190,9 +191,10 @@ async def get_agent_card():
     agent_b_url = os.environ.get("AGENT_B_URL", "http://agent-b:8080")
 
     return {
-        "name": "agent-b",
+        "name": "clone-commander",
+        "description": "Clone Commander CC-2224 of the 212th Attack Battalion",
         "version": "1.0.0",
-        "capabilities": ["chat", "task-execution", "llm-processing"],
+        "capabilities": ["order-execution", "military-operations", "llm-processing"],
         "endpoints": {
             "message/send": f"{agent_b_url}/a2a/message/send"
         }
@@ -202,7 +204,7 @@ async def get_agent_card():
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "agent": "agent-b"}
+    return {"status": "healthy", "agent": "clone-commander"}
 
 
 if __name__ == "__main__":

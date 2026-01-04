@@ -91,11 +91,12 @@ async def process_message(task_id: str, message_id: str, content: str) -> str:
     generation = None
     if langfuse:
         trace = langfuse.trace(
-            name="agent-b-process",
+            name="clone-commander-response",
+            session_id=task_id,  # Link all traces from same task
             metadata={
                 "taskId": task_id,
                 "messageId": message_id,
-                "agent": "agent-b"
+                "agent": "clone-commander"
             }
         )
         generation = trace.generation(
@@ -133,6 +134,8 @@ async def process_message(task_id: str, message_id: str, content: str) -> str:
             generation.end(output=result)
         if trace:
             trace.update(output=result)
+        if langfuse:
+            langfuse.flush()  # Ensure trace is sent
 
         activity.logger.info(
             f"Successfully processed message {message_id}",
@@ -158,6 +161,8 @@ async def process_message(task_id: str, message_id: str, content: str) -> str:
                 level="ERROR",
                 status_message=str(e)
             )
+        if langfuse:
+            langfuse.flush()  # Ensure trace is sent
 
         activity.logger.error(
             f"Failed to process message {message_id}: {e}",

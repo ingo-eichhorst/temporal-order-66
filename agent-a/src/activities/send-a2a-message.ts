@@ -2,6 +2,8 @@
  * Activity for sending A2A messages to other agents.
  */
 
+import { getLangfuseClient } from '../langfuse';
+
 export interface SendA2AMessageParams {
   recipientUrl: string;
   taskId: string;
@@ -28,6 +30,23 @@ export async function sendA2AMessage(params: SendA2AMessageParams): Promise<A2AR
   const { recipientUrl, taskId, messageId, replyTo, content } = params;
 
   console.log(`[Activity] Sending A2A message ${messageId} to ${recipientUrl}`);
+
+  // Initialize Langfuse tracing (if configured)
+  const langfuse = getLangfuseClient();
+  const trace = langfuse?.trace({
+    name: 'a2a-message-send',
+    sessionId: taskId, // Link all traces from same task
+    metadata: {
+      agent: 'agent-a',
+      taskId,
+      messageId,
+      recipientUrl,
+    },
+  });
+  const span = trace?.span({
+    name: 'http-post',
+    input: { content },
+  });
 
   // Construct JSON-RPC 2.0 message envelope
   const payload = {
@@ -62,9 +81,36 @@ export async function sendA2AMessage(params: SendA2AMessageParams): Promise<A2AR
 
     console.log(`[Activity] Successfully sent message ${messageId}`);
 
+    // Record successful trace
+    if (span) {
+      span.end({ output: result });
+    }
+    if (trace) {
+      trace.update({ output: { status: 'success', messageId } });
+    }
+    if (langfuse) {
+      await langfuse.flushAsync();
+    }
+
     return result;
   } catch (error) {
     console.error(`[Activity] Failed to send message ${messageId}:`, error);
+
+    // Record error in trace
+    if (span) {
+      span.end({
+        statusMessage: String(error),
+      });
+    }
+    if (trace) {
+      trace.update({
+        output: { status: 'error', error: String(error) },
+      });
+    }
+    if (langfuse) {
+      await langfuse.flushAsync();
+    }
+
     throw error; // Re-throw for Temporal to handle retry
   }
 }
